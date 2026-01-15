@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+      "target": "ES2022",
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "outDir": "./dist",
+      "rootDir": "./src",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "allowSyntheticDefaultImports": true,
+      "experimentalDecorators": true, // 必須為 true
+      "emitDecoratorMetadata": true,  // 必須為 true
+      "strictPropertyInitialization": false, // 建議設為 false，避免 Entity 報錯
+    },
+    "include": ["src/**/*"]
+  }
