@@ -1,7 +1,7 @@
 import request from 'supertest'
 import express from 'express'
-import { db } from '../pg'
-import { users } from '../schema'
+import { db } from '../pg.ts'
+import { users } from '../schema/index.ts'
 import userRoutes from '../routes/users'
 
 describe('Users API', () => {
