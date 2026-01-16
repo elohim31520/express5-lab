@@ -27,7 +27,7 @@ async function runLoadTest(options: LoadTestOptions) {
     const startTime = performance.now()
 
     // 確定 Worker 檔案路徑 (如果是 ts-node 執行，可能需要指向 .ts；編譯後則指向 .js)
-    const workerPath = path.join(__dirname, 'load-test-worker.ts') 
+    const workerPath = path.join(__dirname, 'worker.ts') 
 
     for (let i = 0; i < workerCount; i++) {
         const worker = new Worker(workerPath, {
@@ -84,8 +84,8 @@ function getOptionsFromArgs(): LoadTestOptions {
 
 	// 默認配置
 	const defaults: LoadTestOptions = {
-		workerCount: 50,
-		ordersPerWorker: 100,
+		workerCount: 100,
+		ordersPerWorker: 400,
 		delayBetweenOrders: 1000, // 1秒
 	}
 

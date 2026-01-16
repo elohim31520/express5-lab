@@ -36,7 +36,7 @@ async function bootstrap() {
 		console.log('🐇 RabbitMQ 連線成功')
 
 		// 啟動訂單消費者來監聽訊息
-		startOrderConsumer().catch(error => {
+		startOrderConsumer().catch((error) => {
 			console.error('❌ 訂單消費者啟動失敗:', error)
 		})
 
@@ -44,8 +44,17 @@ async function bootstrap() {
 
 		app.use(errorHandler)
 
-		app.listen(port, () => {
+		console.log('🔧 正在啟動 HTTP 伺服器...')
+		const server = app.listen(port, 'localhost', () => {
 			console.log(`🚀 Server is running at http://localhost:${port}`)
+		})
+
+		server.on('error', (error) => {
+			console.error('❌ 伺服器啟動錯誤:', error)
+		})
+
+		server.on('listening', () => {
+			console.log('✅ 伺服器成功監聽端口', port)
 		})
 	} catch (error) {
 		console.error('❌ 伺服器啟動失敗:', error)
