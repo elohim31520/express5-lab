@@ -1,15 +1,39 @@
-import { Request, Response, NextFunction } from 'express'
-import { db } from '../pg'
-import { users } from '../schema'
+import { Request, Response } from 'express';
+import userService from '../services/userService';
+import { success } from '../modules/responseHelper';
 
-class UserController {
-	async getAll(req: Request, res: Response) {
-		const allUsers = await db.select().from(users)
-		res.status(200).json({
-			success: true,
-			data: allUsers,
-		})
-	}
+interface AuthenticatedRequest extends Request {
+    user?: { id: number };
 }
 
-export default new UserController()
+class UserController {
+    async getAll(req: Request, res: Response) {
+        const allUsers = await userService.findAll();
+        res.json(success(allUsers));
+    }
+
+    async create(req: Request, res: Response) {
+        const result = await userService.create(req.body);
+        res.status(201).json(success(result));
+    }
+
+    async login(req: Request, res: Response) {
+        const result = await userService.login(req.body);
+        res.json(success(result));
+    }
+
+    async changePassword(req: AuthenticatedRequest, res: Response) {
+        const userId = req.user!.id; 
+        const { oldPassword, newPassword } = req.body;
+
+        const result = await userService.changePassword({ 
+            userId, 
+            oldPassword, 
+            newPassword 
+        });
+        
+        res.json(success(result));
+    }
+}
+
+export default new UserController();

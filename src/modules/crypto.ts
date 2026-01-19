@@ -11,7 +11,8 @@ interface TokenOption {
 
 interface payload {
 	name: string
-	id: number
+	id: string
+	email: string
 }
 
 export function generateToken(payload: payload, option: TokenOption = {}): string {
