@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AppError, AuthError, ClientError } from '../modules/errors';
+import { AppError, AuthError, ClientError, ConflictError } from '../modules/errors';
 import errorCodes from '../constant/errorCodes';
 
 // 定義 Handler 的介面
@@ -19,6 +19,12 @@ const errorHandlers: ErrorMatcher[] = [
         matches: (err) => err instanceof ClientError,
         handle: (err, res) => {
             res.status(400).json({ success: false, code: 400, message: err.message });
+        },
+    },
+    {
+        matches: (err) => err instanceof AppError,
+        handle: (err: AppError, res) => {
+            res.status(err.statusCode).json({ success: false, code: err.statusCode, message: err.message });
         },
     },
     // --- Drizzle / Postgres 專屬處理 ---
@@ -46,7 +52,7 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
     console.error('💥 Error Caught:', {
         name: err.name,
         message: err.message,
-        code: err.code, // Postgres 錯誤通常有這個欄位
+        code: err.code,
         path: req.path,
     });
 

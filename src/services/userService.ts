@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../pg'
 import { users } from '../schema'
 import { generateToken, generateSalt, sha256 } from '../modules/crypto'
-import { ClientError } from '../modules/errors'
+import { ClientError, ConflictError } from '../modules/errors'
 import { USER_NOT_FOUND, PASSWORD_INCORRECT } from '../constant/userErrors'
 import bcrypt from 'bcrypt';
 
@@ -22,16 +22,28 @@ class userService {
 	}
 
 	async create({ name, password, email }: any) {
-		// 1. 直接雜湊，bcrypt 會自動生成 Salt 並混入結果中
-		const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
+		try {
+			// 1. 直接雜湊，bcrypt 會自動生成 Salt 並混入結果中
+			const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
 
-		const [newUser] = await db.insert(users).values({
-			name,
-			email,
-			password: hashedPassword,
-		}).returning();
+			const [newUser] = await db.insert(users).values({
+				name,
+				email,
+				password: hashedPassword,
+			}).returning();
 
-		return generateToken({ name: newUser.name, id: newUser.id, email: newUser.email });
+			return { token: generateToken({ name: newUser.name, id: newUser.id, email: newUser.email }) };
+		} catch (error: any) {
+			// 檢查是否是唯一約束違反 (重複 email)
+			if (error.message && (
+				error.message.includes('duplicate key value violates unique constraint') ||
+				error.message.includes('UNIQUE constraint failed') ||
+				error.message.includes('Failed query')
+			)) {
+				throw new ConflictError('郵箱已被註冊');
+			}
+			throw error;
+		}
 	}
 
 	async login({ email, password }: any) {
@@ -44,7 +56,7 @@ class userService {
 
 		if (!isMatch) throw new ClientError(PASSWORD_INCORRECT);
 
-		return generateToken({ name: user.name, id: user.id, email: user.email });
+		return { token: generateToken({ name: user.name, id: user.id, email: user.email }) };
 	}
 
 	async changePassword({
