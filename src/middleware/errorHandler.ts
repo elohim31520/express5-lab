@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError, AuthError, ClientError, ConflictError } from '../modules/errors';
 import errorCodes from '../constant/errorCodes';
+import { DrizzleError } from 'drizzle-orm';
 
 // 定義 Handler 的介面
 interface ErrorMatcher {
@@ -27,15 +28,38 @@ const errorHandlers: ErrorMatcher[] = [
             res.status(err.statusCode).json({ success: false, code: err.statusCode, message: err.message });
         },
     },
+    {
+        matches: (err) => err instanceof DrizzleError,
+        handle: (err, res) => {
+            res.status(500).json({ 
+                success: false, 
+                code: 500, 
+                message: "資料庫操作異常 (ORM Error)",
+                detail: process.env.NODE_ENV === 'development' ? err.message : undefined
+            });
+        },
+    },
+    
     // --- Drizzle / Postgres 專屬處理 ---
     {
-        // Postgres 唯一約束衝突 (例如 email 重複)，錯誤碼通常是 '23505'
+        // Postgres 唯一約束衝突，錯誤碼通常是 '23505'
         matches: (err) => err.code === '23505' || err.message?.includes('unique constraint'),
         handle: (err, res) => {
             res.status(409).json({ 
                 success: false, 
                 code: errorCodes.DUPLICATE_ACCOUNT.code, 
                 message: "資料已存在" 
+            });
+        },
+    },
+    {
+        // Postgres 外鍵約束失敗
+        matches: (err) => err.code === '23503',
+        handle: (err, res) => {
+            res.status(400).json({ 
+                success: false, 
+                code: 400, 
+                message: "關聯資料不存在或仍在使用中" 
             });
         },
     },
@@ -49,6 +73,7 @@ const errorHandlers: ErrorMatcher[] = [
 ];
 
 const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error('🔥 [Fatal] Unhandled Error:', err);
     console.error('💥 Error Caught:', {
         name: err.name,
         message: err.message,
